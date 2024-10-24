@@ -14,7 +14,7 @@ print("Heartbeat from system (system_id: {})".format(master.target_system))
 
 # Prepare the plot
 plt.ion()  # Enable interactive mode
-fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 12))  # Added fourth subplot for mag data
+fig, ((ax1, ax2, ax3),(ax4, ax5, ax6)) = plt.subplots(2, 3, figsize=(10, 12))  # Added fourth subplot for mag data
 gyro_x_data, gyro_y_data, gyro_z_data = [], [], []
 accel_x_data, accel_y_data, accel_z_data = [], [], []
 mag_x_data, mag_y_data, mag_z_data = [], [], []  # Added magnetometer data lists
@@ -24,6 +24,74 @@ roll_data_mag_raw = []
 pitch_data_mag = []  # Added magnetometer pitch data list
 pitch_data_mag_raw = []
 timestamps = []
+
+import numpy as np
+
+def calculate_thrust_vector_angle(roll, pitch):
+    """
+    Calculate the angle between the thrust vector and the Z axis using roll and pitch angles.
+    
+    Args:
+        roll (float): Roll angle in radians
+        pitch (float): Pitch angle in radians
+    
+    Returns:
+        float: Angle between thrust vector and Z axis in radians
+    """
+    # Create rotation matrices for roll and pitch
+    R_roll = np.array([
+        [1, 0, 0],
+        [0, np.cos(roll), -np.sin(roll)],
+        [0, np.sin(roll), np.cos(roll)]
+    ])
+    
+    R_pitch = np.array([
+        [np.cos(pitch), 0, np.sin(pitch)],
+        [0, 1, 0],
+        [-np.sin(pitch), 0, np.cos(pitch)]
+    ])
+    
+    # Initial thrust vector aligned with Z axis
+    thrust_vector = np.array([0, 0, 1])
+    
+    # Apply rotations to get the actual thrust vector
+    rotated_vector = R_pitch @ R_roll @ thrust_vector
+    
+    # Calculate angle between rotated vector and Z axis
+    z_axis = np.array([0, 0, 1])
+    angle = np.arccos(np.dot(rotated_vector, z_axis))
+    
+    return angle
+
+# Function to get thrust vector components
+def get_thrust_vector_components(roll, pitch):
+    """
+    Get the X, Y, Z components of the thrust vector.
+    
+    Args:
+        roll (float): Roll angle in radians
+        pitch (float): Pitch angle in radians
+    
+    Returns:
+        tuple: (x, y, z) components of the thrust vector
+    """
+    R_roll = np.array([
+        [1, 0, 0],
+        [0, np.cos(roll), -np.sin(roll)],
+        [0, np.sin(roll), np.cos(roll)]
+    ])
+    
+    R_pitch = np.array([
+        [np.cos(pitch), 0, np.sin(pitch)],
+        [0, 1, 0],
+        [-np.sin(pitch), 0, np.cos(pitch)]
+    ])
+    
+    thrust_vector = np.array([0, 0, 1])
+    rotated_vector = R_pitch @ R_roll @ thrust_vector
+    
+    return tuple(rotated_vector)
+
 
 def calculate_attitude_from_mag(mag_x, mag_y, mag_z, accel_x, accel_y, accel_z):
     """
@@ -217,26 +285,24 @@ with open('imu_data.csv', mode='w', newline='') as csv_file:
 
                 # Plot the Attitude data (Roll, Pitch, Yaw)
                 ax4.clear()
-                ax4.plot(timestamps, roll_data, label='Roll', color='r')
-                ax4.plot(timestamps, pitch_data, label='Pitch', color='g')
-                ax4.plot(timestamps, yaw_data, label='Yaw', color='b')
-                ax4.set_title('Attitude Data (rad)')
+                ax4.plot(timestamps, roll_data, label='Roll Cal', color='r')
+                ax4.plot(timestamps, roll_data_mag, label='Roll Cal', color='r')
+                ax4.set_title('Roll Data (rad)')
                 ax4.set_xlabel('Time (s)')
                 ax4.set_ylabel('Angle (rad)')
                 ax4.legend()
 
                 ax5.clear()
-                ax5.plot(timestamps, roll_data_mag, label='Roll', color='r')
-                ax5.plot(timestamps, pitch_data_mag, label='Pitch', color='g')
-                ax5.set_title('Mag Data (rad)')
+                ax5.plot(timestamps, pitch_data, label='Pitch Cal', color='g')
+                ax5.plot(timestamps, pitch_data_mag, label='Pitch Cal', color='g')
+                ax5.set_title('Pitch Data (rad)')
                 ax5.set_xlabel('Time (s)')
                 ax5.set_ylabel('Angle (rad)')
                 ax5.legend()
                 
                 ax6.clear()
-                ax6.plot(timestamps, roll_data_mag_raw, label='Roll', color='r')
-                ax6.plot(timestamps, pitch_data_mag_raw, label='Pitch', color='g')
-                ax6.set_title('Mag Raw Data (rad)')
+                ax6.plot(timestamps, yaw_data, label='Yaw Cal', color='b')
+                ax6.set_title('Yaw Data (rad)')
                 ax6.set_xlabel('Time (s)')
                 ax6.set_ylabel('Angle (rad)')
                 ax6.legend()

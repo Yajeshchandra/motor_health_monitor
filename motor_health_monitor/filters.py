@@ -22,3 +22,16 @@ def apply_kalman_filter(kf, data):
 
 def complementary_filter(a, b, alpha=0.98):
     return alpha * a + (1 - alpha) * b
+
+def low_pass_filter(data, window_size=5):
+    """
+    Apply a simple moving average low-pass filter to the data.
+    
+    Parameters:
+        data (np.array): The raw IMU data (time series).
+        window_size (int): The number of data points to average over (filter window).
+    
+    Returns:
+        np.array: Smoothed data after applying the low-pass filter.
+    """
+    return np.convolve(data, np.ones(window_size)/window_size, mode='valid')
